@@ -102,8 +102,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun showFinance() {
         setContentView(frame()); header("Finanças", "Uma visão simples do seu dinheiro")
-        section("ESTE MÊS"); card("Saldo disponível", "R$ 0,00"); card("Despesas registradas", "Nenhuma ainda"); card("Orçamento", "Configure seu limite mensal")
-        section("AÇÕES"); actionButton("＋  Registrar despesa") { inputDialog("Nova despesa", "expense") }; actionButton("＋  Registrar receita") { inputDialog("Nova receita", "income") }
+        val income = store.total("income"); val expense = store.total("expense"); val balance = income - expense
+        section("ESTE MÊS"); card("Saldo disponível", money(balance), if (balance >= 0) Color.rgb(41, 145, 93) else Color.rgb(190, 69, 69)); card("Receitas", money(income)); card("Despesas", money(expense)); card("Orçamento", "Configure seu limite mensal")
+        section("AÇÕES"); actionButton("＋  Registrar despesa") { financialDialog("Nova despesa", "expense") }; actionButton("＋  Registrar receita") { financialDialog("Nova receita", "income") }
+        if (expense > 0.0) { section("MOVIMENTAÇÕES RECENTES"); store.items().filter { it.kind == "expense" || it.kind == "income" }.take(5).forEach { item -> card(item.title, if (item.kind == "expense") "− ${money(item.amount)}" else "+ ${money(item.amount)}", if (item.kind == "expense") Color.rgb(190, 69, 69) else Color.rgb(41, 145, 93)) } }
     }
 
     private fun showMore() {
@@ -137,8 +139,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun assistantUnavailable() { AlertDialog.Builder(this).setTitle("IA ainda não configurada").setMessage("O app continua funcionando normalmente offline. Nenhuma ação foi executada e seus dados permanecem no aparelho.").setPositiveButton("Entendi", null).show() }
 
+    private fun money(value: Double): String = "R$ %.2f".format(Locale("pt", "BR"), value)
+
     private fun quickAdd() { inputDialog("Nova tarefa", "task") }
+    private fun financialDialog(label: String, kind: String) {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 0, 12, 0) }
+        val description = EditText(this).apply { hint = "Descrição"; setSingleLine() }
+        val amount = EditText(this).apply { hint = "Valor (ex.: 25,90)"; inputType = 2 or 8192; setSingleLine() }
+        box.addView(description); box.addView(amount)
+        AlertDialog.Builder(this).setTitle(label).setView(box).setNegativeButton("Cancelar", null).setPositiveButton("Salvar") { _, _ ->
+            val value = amount.text.toString().replace(",", ".").toDoubleOrNull()
+            if (!description.text.isNullOrBlank() && value != null && value > 0) { store.add(description.text.toString(), kind, value); showFinance() }
+        }.show()
+    }
+
     private fun inputDialog(label: String, kind: String) {
+        if (kind == "expense" || kind == "income") { financialDialog(label, kind); return }
         val input = EditText(this).apply { hint = label; setSingleLine() }
         AlertDialog.Builder(this).setTitle(label).setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Salvar") { _, _ ->
             if (input.text.isNotBlank()) { store.add(input.text.toString(), kind); when (kind) { "task" -> showList("Tarefas", kind); "event" -> showList("Agenda", kind); "expense", "income" -> showFinance(); "note" -> showModule("Notas", kind, "＋  Nova nota"); "shopping" -> showModule("Compras", kind, "＋  Adicionar produto"); "goal" -> showModule("Metas", kind, "＋  Nova meta"); "habit" -> showModule("Hábitos", kind, "＋  Novo hábito") } }
