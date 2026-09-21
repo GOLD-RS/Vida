@@ -91,6 +91,15 @@ class MainActivity : AppCompatActivity() {
         actionButton("＋  Adicionar") { inputDialog(if (kind == "event") "Novo compromisso" else "Nova tarefa", kind) }
     }
 
+    private fun showModule(name: String, kind: String, addLabel: String) {
+        setContentView(frame()); header(name, "Seus dados ficam salvos localmente")
+        val items = store.items().filter { it.kind == kind }
+        section(if (items.isEmpty()) "COMECE AGORA" else "SEUS REGISTROS")
+        if (items.isEmpty()) content.addView(TextView(this).apply { text = "Você ainda não adicionou nada aqui."; textSize = 16f; setTextColor(muted); setPadding(0, 0, 0, 12) })
+        items.forEach { item -> card(if (item.done) "Concluído" else name, item.title, primary) { store.toggle(item.id); showModule(name, kind, addLabel) } }
+        actionButton(addLabel) { inputDialog(name, kind) }
+    }
+
     private fun showFinance() {
         setContentView(frame()); header("Finanças", "Uma visão simples do seu dinheiro")
         section("ESTE MÊS"); card("Saldo disponível", "R$ 0,00"); card("Despesas registradas", "Nenhuma ainda"); card("Orçamento", "Configure seu limite mensal")
@@ -100,10 +109,10 @@ class MainActivity : AppCompatActivity() {
     private fun showMore() {
         setContentView(frame()); header("Organizar", "Tudo que você precisa, em um só lugar")
         section("MÓDULOS")
-        module("📝", "Notas", "Ideias, registros e informações importantes") { showList("Notas", "note") }
-        module("🛒", "Lista de compras", "Produtos, quantidades e categorias") { showList("Compras", "shopping") }
-        module("🎯", "Metas", "Acompanhe o que importa para você") { showList("Metas", "goal") }
-        module("🔁", "Hábitos", "Construa uma rotina sustentável") { showList("Hábitos", "habit") }
+        module("📝", "Notas", "Ideias, registros e informações importantes") { showModule("Notas", "note", "＋  Nova nota") }
+        module("🛒", "Lista de compras", "Produtos, quantidades e categorias") { showModule("Compras", "shopping", "＋  Adicionar produto") }
+        module("🎯", "Metas", "Acompanhe o que importa para você") { showModule("Metas", "goal", "＋  Nova meta") }
+        module("🔁", "Hábitos", "Construa uma rotina sustentável") { showModule("Hábitos", "habit", "＋  Novo hábito") }
         module("⚙", "Configurações", "Segurança, tema e permissões da IA") { settings() }
         section("ASSISTENTE"); actionButton("✦  Conversar com a IA") { showAssistant() }
     }
@@ -132,7 +141,7 @@ class MainActivity : AppCompatActivity() {
     private fun inputDialog(label: String, kind: String) {
         val input = EditText(this).apply { hint = label; setSingleLine() }
         AlertDialog.Builder(this).setTitle(label).setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Salvar") { _, _ ->
-            if (input.text.isNotBlank()) { store.add(input.text.toString(), kind); when (kind) { "task" -> showList("Tarefas", kind); "event" -> showList("Agenda", kind); "expense", "income" -> showFinance(); "note", "shopping", "goal", "habit" -> showMore() } }
+            if (input.text.isNotBlank()) { store.add(input.text.toString(), kind); when (kind) { "task" -> showList("Tarefas", kind); "event" -> showList("Agenda", kind); "expense", "income" -> showFinance(); "note" -> showModule("Notas", kind, "＋  Nova nota"); "shopping" -> showModule("Compras", kind, "＋  Adicionar produto"); "goal" -> showModule("Metas", kind, "＋  Nova meta"); "habit" -> showModule("Hábitos", kind, "＋  Novo hábito") } }
         }.show()
     }
 }
