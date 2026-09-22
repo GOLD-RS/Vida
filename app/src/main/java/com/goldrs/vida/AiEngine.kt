@@ -33,7 +33,12 @@ fun vidaParseWhen(raw: String): Long {
             val c = Calendar.getInstance()
             c.set(Calendar.MONTH, mo - 1); c.set(Calendar.DAY_OF_MONTH, d)
             c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
-            return if (c.timeInMillis < today) c.add(Calendar.YEAR, 1).timeInMillis else c.timeInMillis
+            var ts = c.time
+            if (ts.time < today) {
+                c.add(Calendar.YEAR, 1)
+                ts = c.time
+            }
+            return ts.time
         }
     }
     if (input.contains("depois de amanha")) return today + 2L * LocalStore.DAY_MS
@@ -237,8 +242,9 @@ class AiEngine(private val store: LocalStore) {
         val cats = store.byKind("expense").filter { it.createdAt >= monthStart() }
             .groupBy { if (it.category.isNotBlank()) it.category else "geral" }
             .mapValues { entry -> entry.value.sumOf { it.amount } }
-            .toSortedMap(compareByDescending { it.value })
-        val top = cats.entries.take(3).joinToString(" · ") { "${it.key}: ${money(it.value)} (${(it.value / total * 100).toInt()}%)" }
+        val top = cats.entries.sortedByDescending { it.value }
+            .take(3)
+            .joinToString(" · ") { "${it.key}: ${money(it.value)} (${(it.value / total * 100).toInt()}%)" }
         val budgetLine = if (store.budget() > 0) {
             val b = store.budget()
             if (total > b) " ⚠ Você estourou o orçamento em ${money(total - b)}."
@@ -301,7 +307,7 @@ class AiEngine(private val store: LocalStore) {
         val m = Regex("r\\$\\s*([0-9]+[.,]?[0-9]*)").find(input)
             ?: Regex("\\bpaguei\\s+([0-9]+[.,]?[0-9]*)").find(input)
             ?: Regex("\\b([0-9]+[.,][0-9]{1,2})\\b").find(input)
-        return m?.groupValues?.getOrNull(1)?.replace(".", "").replace(",", ".")?.toDoubleOrNull() ?: 0.0
+        return m?.groupValues?.getOrNull(1)?.replace(".", "")?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
     }
 
     private fun extractTime(input: String): Long {
