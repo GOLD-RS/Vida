@@ -161,7 +161,7 @@ class AiCloud(private val store: LocalStore) {
                     store.moveDue(id, whenMs); store.logAiAction("adiar: ${t.title}")
                 }
             }
-            else -> null
+            else -> return null
         }
     }
 
@@ -274,7 +274,7 @@ fun vidaMoney(v: Double) = "R$ %.2f".format(java.util.Locale("pt", "BR"), v)
 
 /** Converte "14:00", "14h30", "as 14h" em ms no dia. */
 fun timeFromStr(s: String): Long {
-    val m = s.trim().matchFirst(Regex("([0-9]{1,2})\\s*[:h]\\s*([0-9]{2})?")) ?: return 0L
+    val m = Regex("([0-9]{1,2})\\s*[:h]\\s*([0-9]{2})?").find(s.trim()) ?: return 0L
     val h = m.groupValues[1].toInt().coerceIn(0, 23)
     val min = m.groupValues[2].toIntOrNull() ?: 0
     return h * 3_600_000L + min * 60_000L
