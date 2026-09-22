@@ -93,7 +93,7 @@ class LocalStore(context: Context) {
         val norm = normalize(category)
         val hits = items().filter {
             it.kind == "expense" && it.createdAt >= start &&
-            (normalize(it.category) == norm || it.title.lowercase() contains norm)
+            (normalize(it.category) == norm || it.title.lowercase().contains(norm))
         }
         return hits.sumOf { it.amount } to hits.size
     }
@@ -130,19 +130,28 @@ class LocalStore(context: Context) {
     fun aiAllowedModules(): List<String> = cfg("allowed").split(",").filter { it.isNotBlank() }
 
     /** PIN local (hash SHA-256 com salt) para bloquear o app. */
-    fun hasPin(): Boolean = prefs.getString("pinHash", "") != null
+    fun hasPin(): Boolean = prefs.contains("pinHash")
+
     fun setPin(pin: String) {
-        val salt = (prefs.getString("pinSalt") ?: randomSalt())
-        prefs.edit().putString("pinSalt", salt).putString("pinHash", sha256(salt + pin)).apply()
+        val existing = prefs.getString("pinSalt", "")
+        val salt = if (existing != null && existing.isNotBlank()) existing else randomSalt()
+        prefs.edit().putString("pinSalt", salt).putString("pinHash", sha256(salt + pin)).commit()
     }
-    fun verifyPin(pin: String): Boolean =
-        sha256((prefs.getString("pinSalt") ?: "") + pin) == prefs.getString("pinHash")
+
+    fun verifyPin(pin: String): Boolean {
+        val hash = prefs.getString("pinHash", "") ?: ""
+        val salt = prefs.getString("pinSalt", "") ?: ""
+        return hash.isNotEmpty() && sha256(salt + pin) == hash
+    }
 
     /** Apaga TUDO (itens, config, histórico da IA). Usado em "resetar dados". */
     fun clearAllData() { prefs.edit().clear().apply() }
 
-    private fun randomSalt(): String =
-        java.security.SecureRandom.getInstanceStrong().nextBytes(16).joinToString("") { "%02x".format(it) }
+    private fun randomSalt(): String {
+        val bytes = ByteArray(16)
+        java.security.SecureRandom.getInstanceStrong().nextBytes(bytes)
+        return bytes.joinToString("") { b -> String.format(java.util.Locale.ROOT, "%02x", b) }
+    }
 
     private fun sha256(s: String): String =
         java.security.MessageDigest.getInstance("SHA-256")
