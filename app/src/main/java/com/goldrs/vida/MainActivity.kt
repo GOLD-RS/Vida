@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         val income = store.total("income"); val expense = store.total("expense"); val balance = income - expense
         section("ESTE MÊS"); card("Saldo disponível", money(balance), if (balance >= 0) Color.rgb(41, 145, 93) else Color.rgb(190, 69, 69)); card("Receitas", money(income)); card("Despesas", money(expense)); card("Orçamento", "Configure seu limite mensal")
         section("AÇÕES"); actionButton("＋  Registrar despesa") { financialDialog("Nova despesa", "expense") }; actionButton("＋  Registrar receita") { financialDialog("Nova receita", "income") }
-        if (expense > 0.0) { section("MOVIMENTAÇÕES RECENTES"); store.items().filter { it.kind == "expense" || it.kind == "income" }.take(5).forEach { item -> card(item.title, if (item.kind == "expense") "− ${money(item.amount)}" else "+ ${money(item.amount)}", if (item.kind == "expense") Color.rgb(190, 69, 69) else Color.rgb(41, 145, 93)) } }
+        if (income > 0.0 || expense > 0.0) { section("MOVIMENTAÇÕES RECENTES"); store.items().filter { it.kind == "expense" || it.kind == "income" }.take(5).forEach { item -> card(item.title, if (item.kind == "expense") "− ${money(item.amount)}" else "+ ${money(item.amount)}", if (item.kind == "expense") Color.rgb(190, 69, 69) else Color.rgb(41, 145, 93)) } }
     }
 
     private fun showMore() {
