@@ -26,8 +26,9 @@ fun vidaTodayStart(): Long {
 fun vidaParseWhen(raw: String): Long {
     val input = LocalStore.stripAccents(raw.trim().lowercase())
     val today = vidaTodayStart()
-    input.matchFirst(Regex("(\\d{1,2})/(\\d{1,2})"))?.let { m ->
-        val d = m.groupValues[1].toInt(); val mo = m.groupValues[2].toInt()
+    val dm = Regex("(\\d{1,2})/(\\d{1,2})").find(input)
+    if (dm != null) {
+        val d = dm.groupValues[1].toInt(); val mo = dm.groupValues[2].toInt()
         if (mo in 1..12 && d in 1..31) {
             val c = Calendar.getInstance()
             c.set(Calendar.MONTH, mo - 1); c.set(Calendar.DAY_OF_MONTH, d)
@@ -90,7 +91,7 @@ class AiEngine(private val store: LocalStore) {
         }
         if ((input.startsWith("quais") || input.startsWith("contas") || input.startsWith("conta")) &&
             (input.contains("vencem") || input.contains("proxim"))) {
-            val days = input.matchFirst(Regex("([0-9]+)\\s*dias"))?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 7
+            val days = Regex("([0-9]+)\\s*dias").find(input)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 7
             val bills = store.upcomingBills(vidaTodayStart(), vidaTodayStart() + days.toLong() * LocalStore.DAY_MS)
             return if (bills.isEmpty()) AiResult("Nenhuma conta vence nos próximos $days dias. 🎉")
             else AiResult("Vencem nos próximos $days dias: " + listBills(bills))
@@ -235,7 +236,7 @@ class AiEngine(private val store: LocalStore) {
         if (total <= 0.0) return "Ainda não há despesas este mês. ${hintExpense()}"
         val cats = store.byKind("expense").filter { it.createdAt >= monthStart() }
             .groupBy { if (it.category.isNotBlank()) it.category else "geral" }
-            .mapValues { (_, v) -> v.sumOf { it.amount } }
+            .mapValues { entry -> entry.value.sumOf { it.amount } }
             .toSortedMap(compareByDescending { it.value })
         val top = cats.entries.take(3).joinToString(" · ") { "${it.key}: ${money(it.value)} (${(it.value / total * 100).toInt()}%)" }
         val budgetLine = if (store.budget() > 0) {
@@ -270,7 +271,7 @@ class AiEngine(private val store: LocalStore) {
     }
 
     private fun suggestFreeTime(input: String): String {
-        val hours = input.matchFirst(Regex("([0-9]+)\\s*(?:h|horas|horas livres)"))?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 2
+        val hours = Regex("([0-9]+)\\s*(?:h|horas)").find(input)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 2
         val cands = store.byKind("task").filter { !it.done }
             .sortedWith(compareByDescending { it.priority }.thenBy { if (it.dueDate > 0) it.dueDate else Long.MAX_VALUE })
             .take(2)
@@ -293,13 +294,13 @@ class AiEngine(private val store: LocalStore) {
     }
 
     private fun extractCategory(input: String): String? =
-        input.matchFirst(Regex("\\bcom ([a-z0-9 ]+)"))?.groupValues?.getOrNull(1)?.trim()
-            ?: input.matchFirst(Regex("\\bde ([a-z0-9 ]+)$"))?.groupValues?.getOrNull(1)?.trim()
+        Regex("\\bcom ([a-z0-9 ]+)").find(input)?.groupValues?.getOrNull(1)?.trim()
+            ?: Regex("\\bde ([a-z0-9 ]+)$").find(input)?.groupValues?.getOrNull(1)?.trim()
 
     private fun parseAmount(input: String): Double {
-        val m = input.matchFirst(Regex("r\\$\\s*([0-9]+[.,]?[0-9]*)"))
-            ?: input.matchFirst(Regex("\\bpaguei\\s+([0-9]+[.,]?[0-9]*)"))
-            ?: input.matchFirst(Regex("\\b([0-9]+[.,][0-9]{1,2})\\b"))
+        val m = Regex("r\\$\\s*([0-9]+[.,]?[0-9]*)").find(input)
+            ?: Regex("\\bpaguei\\s+([0-9]+[.,]?[0-9]*)").find(input)
+            ?: Regex("\\b([0-9]+[.,][0-9]{1,2})\\b").find(input)
         return m?.groupValues?.getOrNull(1)?.replace(".", "").replace(",", ".")?.toDoubleOrNull() ?: 0.0
     }
 
@@ -317,10 +318,11 @@ class AiEngine(private val store: LocalStore) {
     }
 
     private fun stripWords(text: String, stop: Set<String>): String {
-        var words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-        while (words.isNotEmpty() && (stop.contains(words.first()) || !words.first().isNotBlank())) words.removeAt(0)
-        while (words.isNotEmpty() && setOf("de", "do", "da", "o", "a", "os", "as").contains(words.first())) words.removeAt(0)
-        return words.joinToString(" ")
+        val words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        var i = 0
+        while (i < words.size && stop.contains(words[i])) i++
+        while (i < words.size && setOf("de", "do", "da", "o", "a", "os", "as").contains(words[i])) i++
+        return words.drop(i).joinToString(" ")
     }
 
     private fun cleanTitle(input: String): String {
@@ -338,10 +340,11 @@ class AiEngine(private val store: LocalStore) {
             "despesas", "receita", "gasto", "gastos", "paguei", "nota", "notas", "anotacao", "anotacoes",
             "compras", "compra", "lista", "produto", "produtos", "item", "meta", "metas", "objetivo",
             "objetivos", "em", "a", "o", "as", "os")
-        var words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-        while (words.isNotEmpty() && stop.contains(words.first())) words.removeAt(0)
-        while (words.isNotEmpty() && setOf("de", "do", "da", "o", "a", "os", "as").contains(words.first())) words.removeAt(0)
-        return words.joinToString(" ")
+        val words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        var i = 0
+        while (i < words.size && stop.contains(words[i])) i++
+        while (i < words.size && setOf("de", "do", "da", "o", "a", "os", "as").contains(words[i])) i++
+        return words.drop(i).joinToString(" ")
     }
 
     private fun fallback(): String =
