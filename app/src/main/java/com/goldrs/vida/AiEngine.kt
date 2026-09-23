@@ -279,7 +279,7 @@ class AiEngine(private val store: LocalStore) {
     private fun suggestFreeTime(input: String): String {
         val hours = Regex("([0-9]+)\\s*(?:h|horas)").find(input)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 2
         val cands = store.byKind("task").filter { !it.done }
-            .sortedWith(compareByDescending { it.priority }.thenBy { if (it.dueDate > 0) it.dueDate else Long.MAX_VALUE })
+            .sortedWith(compareByDescending<Item> { it.priority }.thenBy { if (it.dueDate > 0) it.dueDate else Long.MAX_VALUE })
             .take(2)
         if (cands.isEmpty()) return "Você está livre e sem tarefas — bom momento para planejar algo novo! Peça \"criar meta...\" ou \"planejar minha semana\"."
         val min = hours * 60
