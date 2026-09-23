@@ -44,9 +44,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun frame(): LinearLayout {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(surface) }
-        content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 18, 20, 12) }
-        root.addView(content, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(bottomBar(), LinearLayout.LayoutParams(-1, 68))
+        content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 18, 20, 28) }
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(content) }
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(bottomBar(), LinearLayout.LayoutParams(-1, 72))
         return root
     }
 
@@ -65,8 +66,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun header(title: String, subtitle: String? = null) {
         content.removeAllViews()
-        content.addView(TextView(this).apply { this.text = title; textSize = 28f; setTextColor(ink); setTypeface(null, 1) })
-        subtitle?.let { value -> content.addView(TextView(this).apply { this.text = value; textSize = 14f; setTextColor(muted); setPadding(0, 5, 0, 18) }) }
+        content.addView(TextView(this).apply { text = "VIDA  •  SEU PAINEL PESSOAL"; textSize = 11f; setTextColor(primary); setTypeface(null, 1); setPadding(0, 0, 0, 8) })
+        content.addView(TextView(this).apply { this.text = title; textSize = 30f; setTextColor(ink); setTypeface(null, 1) })
+        subtitle?.let { value -> content.addView(TextView(this).apply { this.text = value; textSize = 14f; setTextColor(muted); setPadding(0, 6, 0, 20) }) }
     }
 
     private fun section(label: String) {
@@ -75,7 +77,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun card(label: String, value: String, accent: Int = primary, action: (() -> Unit)? = null): MaterialCardView {
         val card = MaterialCardView(this).apply {
-            radius = 20f; cardElevation = 0f; setCardBackgroundColor(cardBg)
+            radius = 22f; cardElevation = 1.5f; strokeWidth = 1; strokeColor = if (dark) Color.rgb(48, 53, 70) else Color.rgb(232, 234, 242); setCardBackgroundColor(cardBg)
             action?.let { click -> setOnClickListener { click() } }
         }
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(17, 15, 17, 15) }
@@ -87,7 +89,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun actionButton(text: String, action: () -> Unit) {
-        content.addView(MaterialButton(this).apply { this.text = text; setOnClickListener { action() } })
+        content.addView(MaterialButton(this).apply {
+            this.text = text; textSize = 14f; cornerRadius = 18; minHeight = 54; insetTop = 4; insetBottom = 4
+            setTextColor(if (dark) Color.WHITE else primary); backgroundTintList = android.content.res.ColorStateList.valueOf(if (dark) Color.rgb(41, 47, 72) else Color.rgb(235, 238, 255))
+            setOnClickListener { action() }
+        })
     }
 
     private fun showHome() {
