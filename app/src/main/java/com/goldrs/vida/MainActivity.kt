@@ -18,17 +18,26 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
     private lateinit var store: LocalStore
     private lateinit var content: LinearLayout
-    private val dark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-    private val ink = if (dark) Color.rgb(233, 236, 245) else Color.rgb(27, 29, 41)
-    private val muted = if (dark) Color.rgb(146, 151, 168) else Color.rgb(103, 107, 124)
+    private var dark = false
+    private var ink = Color.rgb(27, 29, 41)
+    private var muted = Color.rgb(103, 107, 124)
     private val primary = Color.rgb(98, 118, 226)
-    private val surface = if (dark) Color.rgb(13, 15, 23) else Color.rgb(247, 248, 252)
-    private val cardBg = if (dark) Color.rgb(23, 26, 37) else Color.WHITE
+    private var surface = Color.rgb(247, 248, 252)
+    private var cardBg = Color.WHITE
     private val green = Color.rgb(41, 145, 93)
     private val red = Color.rgb(190, 69, 69)
 
+    private fun configureColors() {
+        dark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        ink = if (dark) Color.rgb(233, 236, 245) else Color.rgb(27, 29, 41)
+        muted = if (dark) Color.rgb(146, 151, 168) else Color.rgb(103, 107, 124)
+        surface = if (dark) Color.rgb(13, 15, 23) else Color.rgb(247, 248, 252)
+        cardBg = if (dark) Color.rgb(23, 26, 37) else Color.WHITE
+    }
+
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        configureColors()
         store = LocalStore(this)
         showHome()
     }
