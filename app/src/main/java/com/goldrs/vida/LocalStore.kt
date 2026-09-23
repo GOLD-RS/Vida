@@ -30,22 +30,24 @@ class LocalStore(context: Context) {
 
     fun items(): MutableList<Item> {
         val result = mutableListOf<Item>()
-        val array = JSONArray(prefs.getString("items", "[]") ?: "[]")
+        val array = try { JSONArray(prefs.getString("items", "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
         for (i in 0 until array.length()) {
-            val o = array.getJSONObject(i)
-            result += Item(
-                o.getLong("id"),
-                o.getString("title"),
-                o.getString("kind"),
-                o.optBoolean("done"),
-                o.optDouble("amount", 0.0),
-                o.optLong("createdAt", 0L),
-                o.optLong("dueDate", 0L),
-                o.optLong("time", 0L),
-                o.optInt("priority", 0),
-                o.optString("body"),
-                o.optString("category")
-            )
+            try {
+                val o = array.getJSONObject(i)
+                result += Item(
+                    o.optLong("id", System.currentTimeMillis() + i),
+                    o.optString("title", "Sem título"),
+                    o.optString("kind", "note"),
+                    o.optBoolean("done"),
+                    o.optDouble("amount", 0.0),
+                    o.optLong("createdAt", System.currentTimeMillis()),
+                    o.optLong("dueDate", 0L),
+                    o.optLong("time", 0L),
+                    o.optInt("priority", 0),
+                    o.optString("body"),
+                    o.optString("category")
+                )
+            } catch (_: Exception) { /* ignora somente o registro corrompido */ }
         }
         return result.sortedByDescending { it.createdAt }.toMutableList()
     }
