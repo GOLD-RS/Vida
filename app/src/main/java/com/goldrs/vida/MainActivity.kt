@@ -278,7 +278,7 @@ class MainActivity : AppCompatActivity() {
     private fun financialDialog(label: String, kind: String) {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 0, 12, 0) }
         val description = EditText(this).apply { hint = "Descrição"; setSingleLine() }
-        val amount = EditText(this).apply { hint = "Valor (ex.: 25,90)"; inputType = 2 or 4096; setSingleLine() }
+        val amount = EditText(this).apply { hint = "Valor (ex.: 25,90)"; inputType = 2 or 8192; setSingleLine() }
         box.addView(description); box.addView(amount)
         AlertDialog.Builder(this).setTitle(label).setView(box).setNegativeButton("Cancelar", null).setPositiveButton("Salvar") { _, _ ->
             val value = amount.text.toString().replace(",", ".").toDoubleOrNull()
@@ -288,7 +288,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun budgetDialog() {
         val amount = EditText(this).apply {
-            hint = "Limite mensal (ex.: 2500,00)"; inputType = 2 or 4096; setSingleLine()
+            hint = "Limite mensal (ex.: 2500,00)"; inputType = 2 or 8192; setSingleLine()
             if (store.budget() > 0) setText(store.budget().toString().replace(".", ","))
         }
         AlertDialog.Builder(this).setTitle("Orçamento mensal").setView(amount)
